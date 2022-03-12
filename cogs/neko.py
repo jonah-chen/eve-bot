@@ -11,7 +11,7 @@ class Neko(commands.Cog):
 
     @commands.command(aliases=["nyaa", "meow", "mew"])
     async def neko(self, ctx):
-        await ctx.send("Neko command not supported on this version")
+        await ctx.send("Neko command is not supported on this version")
 
 
 def setup(client):
