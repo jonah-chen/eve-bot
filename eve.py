@@ -38,7 +38,6 @@ class Eve():
                 \nunload - Unloads a specified cog \npoke - Sends a dm to a specified user with your user signature \
                 \ngive_flowers - Sends flowers to a specified user \npm - Sends a private message to a specified user \
                 \napm - Sends an anonymous private message to a specified user \
-                \nunlock_praxis, lock_praxis - Unlocks/locks the fuck_praxis command \nfuck_praxis - Every hour, send the message 'Fuck Praxis' in the chat \
                 \nhowweeb - How much of a weeb are you? \nhyperactive - Unleashes Eve's hyperactive skill: Odin Spear```", inline=False)
             help_embed.add_field(name="Cog Commands", value="```8ball - Ask Eve a random yes/no question, and she will reply from a list of responses \
                 \nyoutube - Eve will return the first video she finds on Youtube given a query \nneko - Returns a picture of a neko \
@@ -193,47 +192,19 @@ class Eve():
         async def fuck_praxis(ctx):
             EST = pytz.timezone("US/Eastern")
 
-            if not self.praxis_lock:
-                if not self.praxis:
-                    self.praxis = True
-                    self.praxis_time = datetime.datetime.now(EST).strftime("%H:%M:%S")
-                    await ctx.send(f"Praxis bullying has commenced at {self.praxis_time} EST.")
-                elif self.praxis:
-                    self.praxis = False
-                    self.praxis_time = datetime.datetime.now(EST).strftime("%H:%M:%S")
-                    await ctx.send(f"Praxis bullying has been stopped at {self.praxis_time} EST.")
+            if not self.praxis:
+                self.praxis = True
+                self.praxis_time = datetime.datetime.now(EST).strftime("%H:%M:%S")
+                await ctx.send(f"Praxis bullying has commenced at {self.praxis_time} EST.")
+            elif self.praxis:
+                self.praxis = False
+                self.praxis_time = datetime.datetime.now(EST).strftime("%H:%M:%S")
+                await ctx.send(f"Praxis bullying has been stopped at {self.praxis_time} EST.")
 
-                while self.praxis:
-                    await ctx.send("Fuck Praxis.")
-                    # Asyncio is useful because it allows other tasks to be run while .sleep() is active
-                    await asyncio.sleep(3600)
-            else:
-                await ctx.send("Apologies, Praxis bullying is locked.")
-                return
-
-
-        @self.client.command(aliases=["praxis_lock", "unlock_praxis", "praxis_unlock"])
-        async def lock_praxis(ctx):
-            if str(ctx.author) == "Chubbyman#3362" and self.praxis_lock:
-                self.praxis_lock = False
-                await ctx.send("Praxis bullying is now unlocked.")
-                return
-            elif str(ctx.author) == "Chubbyman#3362" and not self.praxis_lock:
-                self.praxis_lock = True
-                await ctx.send("Praxis bullying is now locked.")
-                return
-            else:
-                await ctx.send("Apologies, you cannot use this command.")
-
-        
-        for filename in os.listdir("cogs"):
-            if filename.endswith(".py"):
-                # Cuts cog_example.py to cog_example
-                self.client.load_extension(f"cogs.{filename[:-3]}")
-        
-        # Yes, order matters; you have to run this last
-        TOKEN = os.environ["TOKEN"]
-        self.client.run(TOKEN)
+            while self.praxis:
+                await ctx.send("Fuck Praxis.")
+                # Asyncio is useful because it allows other tasks to be run while .sleep() is active
+                await asyncio.sleep(3600)
 
 
 if __name__ == "__main__":
