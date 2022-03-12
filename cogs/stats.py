@@ -10,6 +10,7 @@ class Stats(commands.Cog):
     @commands.command(aliases=['sample', 'realization'])
     async def realize(self, ctx, *, msg):
         if msg == 'help':
+            await ctx.send("**Available distributions:**uniform, normal, poisson, binomial, geometric, negative_binomial, hypergeometric, beta, gamma, chisquare, f, t, pareto")
             await ctx.send("Usage: `realize <distribution> <parameters (comma seperated)>`")
             return
 
@@ -24,9 +25,9 @@ class Stats(commands.Cog):
                 if len(splitted) == 2:
                     params[splitted[0]] = float(splitted[1])
                 else:
-                    ctx.send(f"Invalid parameter: `{param}`")
+                    await ctx.send(f"Invalid parameter: `{param}`")
             if not params:
-                ctx.send("No parameters specified")
+                await ctx.send("No parameters specified")
                 return
 
             if 'uniform' in dist.lower():
