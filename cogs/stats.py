@@ -94,10 +94,10 @@ class Stats(commands.Cog):
                     p = list(params.values())[0]
                     await ctx.send(str(np.random.geometric(p)))
             elif 'hypergeometric' in dist.lower():
-                if 'n' in params and 'm' in params and 'N' in params:
+                if 'n' in params and 'm' in params and 'pop' in params:
                     n = int(params['n'])
                     m = int(params['m'])
-                    N = int(params['N'])
+                    N = int(params['pop'])
                     await ctx.send(str(np.random.hypergeometric(n, m, N)))
                 else:
                     await ctx.send("Invalid parameters for hypergeometric distribution: " + 
