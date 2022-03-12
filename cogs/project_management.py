@@ -25,16 +25,22 @@ from time import time, mktime
 import asyncio
 import datetime
 import pytz
-import logging
 
 _DELAY = 60 # Delay between each check for reminders
 _MAGIC_NUMBER = 0x12abcdef
-_ASSIGNED_COLOR = 0xff3b3b
+_ASSIGNED_COLOR = 0x8e3b3b
 _UNASSIGNED_COLOR = 0x0adbfc
 _COMPLETED_COLOR = 0x00ff00
+_OVERDUE_COLOR = 0xff0000
 _NORMAL = 1
 _COMPLETE = 2
+_OVERDUE = 3
 _TIME_ZONE = pytz.timezone('US/Eastern')
+
+class mySnowFlake(nextcord.abc.Snowflake):
+    def __init__(self, id):
+        self.id = id
+
 class _Task:
     def __init__(self, task_id, create=False):
         self.id = task_id
@@ -55,7 +61,8 @@ class _Task:
                 self.status         = int(f.readline().strip(), 16)
                 self.due_date       = int(f.readline().strip(), 16)
                 self.remind_date    = int(f.readline().strip(), 16)
-                self.assignees      = f.readline().strip().split("\t")
+                _assignees          = f.readline().strip().split("\t")
+                self.assignees      = [int(id) for id in _assignees if id]
                 self.description    = f.read()
 
     def __bool__(self):
@@ -71,14 +78,45 @@ class _Task:
             f.write("\n")
             f.write(hex(self.remind_date)[2:])
             f.write("\n")
-            f.write("\t".join(self.assignees))
+            f.write("\t".join(map(str,self.assignees)))
             f.write("\n")
             f.write(self.description)
 
 
 class ProjectManagement(commands.Cog):
+    @staticmethod
+    def embed_task_summary(task):
+        if task.due_date:
+            due_date_timestamp = datetime.datetime.fromtimestamp(float(task.due_date), tz=_TIME_ZONE)
+            due_date_str = due_date_timestamp.strftime('%m/%d/%Y %H:%M')
+        else:
+            due_date_str = "N/A"
+
+        dict_embed = nextcord.Embed(
+            title = task.name,
+            description = f"Due Date: {due_date_str}\n" +\
+                        f"Description: {task.description}\n",
+            colour = _COMPLETED_COLOR if task.status == _COMPLETE else _ASSIGNED_COLOR
+        )
+        dict_embed.set_thumbnail(url="https://media.discordapp.net/attachments/952037974420385793/952038039457267712/Eve_Code_Ultimate_2.png")
+        dict_embed.set_footer(text="Github: https://github.com/jonah-chen/eve-bot")
+
+        return dict_embed
+
+    @commands.command(aliases=["dummy2"])
+    async def dummy(self, ctx, member: nextcord.Member = None, *, msg):
+        try:
+            await ctx.send(f"One second...{msg}")
+            channel = await self.client.create_dm(mySnowFlake(member.id))
+            await channel.send(f"asdflkj")
+            print("user")
+
+        except Exception as e:
+            print(e)
+            
     def __init__(self, client) -> None:
         self.client = client
+        self.reminders = False
         self._read_cache()
         self._read_type_cache()
     
@@ -87,11 +125,7 @@ class ProjectManagement(commands.Cog):
 
     def _write_cache(self):
         with open(".pmp/cache", "w") as cache_file:
-            cache_file.write("\n".join([hex(t.id) for t in self.cache]))
-
-    @commands.command(aliases=["dummy2"])
-    async def dummy(self, ctx, *, msg):
-        await ctx.send(f"One second...{msg}")
+            cache_file.write("\n".join([hex(t.id)[2:] for t in self.cache]))
         
     def _read_cache(self):
         with open(".pmp/cache", "r") as cache_file:
@@ -107,56 +141,65 @@ class ProjectManagement(commands.Cog):
             cache_str = cache_str.split("|")
             self.types[cache_str[0]] = cache_str[1]
 
-    async def _start(self):
-        # TODO: check any task need to send reminder
-        await asyncio.sleep(_DELAY)
+    @commands.command(aliases=["live_update", "realtime", "realtime_updates", "live_updates", "realtime_update"])
+    async def toggle_live(self, ctx):
+        self.reminders = not self.reminders
+        await ctx.send(f"Live updates are now {'enabled' if self.reminders else 'disabled'}.")
+
+        while self.reminders:
+            events = [t for t in self.cache if t.remind_date <= time()]
+            for task in events:
+                if task.assignees and task.status != _COMPLETE:
+                    emb = ProjectManagement.embed_task_summary(task)
+                    for assignee in task.assignees:
+                        channel = await self.client.create_dm(mySnowFlake(assignee))
+                        await channel.send(embed=emb)
+            await asyncio.sleep(_DELAY)
+
+    @commands.command(aliases=['toggle_reminder'])
+    async def toggle_reminders(self, ctx):
+        self.reminders = not self.reminders
+        await ctx.send(f"Reminders are now {'enabled' if self.reminders else 'disabled'}")
 
     @commands.command(aliases=['timeline'])
-    async def todo(self, ctx, *, task_name):
-        pass
+    async def todo(self, ctx):
+        tasks = [t for t in self.cache if t.status != _COMPLETE]
+        tasks.sort(key=lambda t: t.due_date)
+        if not tasks:
+            await ctx.send("No task to show")
+            return
+
+        embed = nextcord.Embed(title="Todo List", color=0x555555)
+        for task in tasks:
+            embed.add_field(name=f"{task.name}", value=f"{task.due_date}", inline=False)
+        await ctx.send(embed=embed)
 
     @commands.command(aliases=['info'])
     async def describe(self, ctx, *, msg):
         for task in self.cache:
             if task.name == msg:
-                # Create embed
-                # convert due date to local time
-                try:
-                    if task.due_date:
-                        due_date_timestamp = datetime.datetime.fromtimestamp(float(task.due_date), tz=_TIME_ZONE)
-                        due_date_str = due_date_timestamp.strftime('%m/%d/%Y %H:%M')
-                    else:
-                        due_date_str = "N/A"
-
-                    dict_embed = nextcord.Embed(
-                        title = task.name,
-                        description = f"Due Date: {due_date_str}\n" +\
-                                    f"Description: {task.description}\n",
-                        colour = _COMPLETED_COLOR if task.status == _COMPLETE else _ASSIGNED_COLOR
-                    )
-                    dict_embed.set_thumbnail(url="https://media.discordapp.net/attachments/952037974420385793/952038039457267712/Eve_Code_Ultimate_2.png")
-                    dict_embed.set_footer(text="Github: https://github.com/jonah-chen/eve-bot")
-                    await ctx.send(embed=dict_embed)
-                except Exception as e:
-                    print(e)
+                emb = ProjectManagement.embed_task_summary(task)
+                await ctx.send(embed=emb)
                 return
         await ctx.send("Task not found.")
 
     @commands.command()
     async def assign(self, ctx, member: nextcord.Member = None, *, msg):
-        for task in self.cache:
-            if task.name == msg:
-                if member is None:
-                    await ctx.send("Please specify a member.")
+        try:
+            for task in self.cache:
+                if task.name == msg:
+                    if member is None:
+                        await ctx.send("Please specify a member.")
+                        return
+                    if member.id in task.assignees:
+                        await ctx.send("Member already assigned.")
+                        return
+                    task.assignees.append(member.id)
+                    task.update()
+                    await ctx.send(f"`{member.name}` has been assigned to `{task.name}`.")
                     return
-                if member.name in task.assignees:
-                    await ctx.send("Member already assigned.")
-                    return
-                task.assignees.append(member.name)
-                task.update()
-                await ctx.send(f"`{member.name}` has been assigned to `{task.name}`.")
-                return
-
+        except Exception as e:
+            print(e)
         await ctx.send("Task not found.")
 
     @commands.command(aliases=['task', 'new_task', 'create', 'add'])
@@ -199,8 +242,7 @@ class ProjectManagement(commands.Cog):
     @commands.command(aliases=['categlorize', 'add_to_category', 'set_type'])
     async def cat(ctx, *, msg):
         await ctx.send("Not implemented.")
-
-    
+   
     @commands.command(aliases=['due_date', 'set_due_date', 'deadline', 'set_deadline'])
     async def due(self, ctx, *, msg):
         now = datetime.datetime.now(_TIME_ZONE)
@@ -280,7 +322,6 @@ class ProjectManagement(commands.Cog):
         task.update()
         await ctx.send(f"Task {task.name} is now due on {tgt_date.strftime('%m/%d/%Y %H:%M')}")
 
-
     @commands.command(aliases=['set_reminder'])
     async def remind(self, ctx, *, msg):
         task = msg.split()[0]
@@ -326,7 +367,6 @@ class ProjectManagement(commands.Cog):
 
         date = datetime.datetime.fromtimestamp(task.remind_date, _TIME_ZONE)
         await ctx.send(f"Task {task.name} will be reminded on {date.strftime('%m/%d/%Y %H:%M')}")
-
 
     @commands.command(aliases=['complete', 'completed', 'finish', 'finish_task', 'finished'])
     async def done(self, ctx, *, msg):
