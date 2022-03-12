@@ -94,24 +94,25 @@ class Stats(commands.Cog):
                     p = list(params.values())[0]
                     await ctx.send(str(np.random.geometric(p)))
             elif 'hypergeometric' in dist.lower():
-                if 'good' in params and 'bad' in params and 'total' in params:
-                    good = int(params['good'])
-                    bad = int(params['bad'])
-                    total = int(params['total'])
-                    await ctx.send(str(np.random.hypergeometric(good, bad, total)))
-                elif 'g' in params and 'b' in params and 'n' in params:
-                    g = int(params['g'])
-                    b = int(params['b'])
-                    n = int(params['n'])
-                    await ctx.send(str(np.random.hypergeometric(g, b, n)))
-                elif 'n' in params and 'k' in params and 'samples' in params:
-                    n = int(params['n'])
-                    k = int(params['k'])
-                    samples = int(params['samples'])
-                    await ctx.send(str(np.random.hypergeometric(k, samples-k, n)))
-                else:
-                    await ctx.send("Invalid parameters for hypergeometric distribution: " + 
-                        "Only `good,bad,total`, `g,b,n`, and `n,k,samples` are valid parameters.")
+                await ctx.send("Hypergeometric distribution not implemented yet because it is too hard.")
+                # if 'good' in params and 'bad' in params and 'total' in params:
+                #     good = int(params['good'])
+                #     bad = int(params['bad'])
+                #     total = int(params['total'])
+                #     await ctx.send(str(np.random.hypergeometric(good, bad, total)))
+                # elif 'g' in params and 'b' in params and 'n' in params:
+                #     g = int(params['g'])
+                #     b = int(params['b'])
+                #     n = int(params['n'])
+                #     await ctx.send(str(np.random.hypergeometric(g, b, n)))
+                # elif 'n' in params and 'k' in params and 'samples' in params:
+                #     n = int(params['n'])
+                #     k = int(params['k'])
+                #     samples = int(params['samples'])
+                #     await ctx.send(str(np.random.hypergeometric(k, samples-k, n)))
+                # else:
+                #     await ctx.send("Invalid parameters for hypergeometric distribution: " + 
+                #         "Only `good,bad,total`, `g,b,n`, and `n,k,samples` are valid parameters.")
             elif 'exponential' in dist.lower():
                 if 'lambda' in params:
                     lam = params['lambda']
