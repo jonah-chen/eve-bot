@@ -99,16 +99,16 @@ class Stats(commands.Cog):
                     bad = int(params['bad'])
                     total = int(params['total'])
                     await ctx.send(str(np.random.hypergeometric(good, bad, total)))
-                if 'g' in params and 'b' in params and 'n' in params:
+                elif 'g' in params and 'b' in params and 'n' in params:
                     g = int(params['g'])
                     b = int(params['b'])
                     n = int(params['n'])
                     await ctx.send(str(np.random.hypergeometric(g, b, n)))
-                if 'n' in params and 'k' in params and 'samples' in params:
+                elif 'n' in params and 'k' in params and 'samples' in params:
                     n = int(params['n'])
                     k = int(params['k'])
                     samples = int(params['samples'])
-                    await ctx.send(str(np.random.hypergeometric(k, n-k, samples)))
+                    await ctx.send(str(np.random.hypergeometric(k, samples-k, n)))
                 else:
                     await ctx.send("Invalid parameters for hypergeometric distribution: " + 
                         "Only `good,bad,total`, `g,b,n`, and `n,k,samples` are valid parameters.")
