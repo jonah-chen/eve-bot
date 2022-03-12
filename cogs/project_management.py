@@ -18,21 +18,23 @@ Files:
 
 
 import cmath
+from re import T
 import nextcord
 from nextcord.ext import commands
-from time import time
+from time import time, mktime
 import asyncio
 import datetime
 import pytz
+import logging
 
 _DELAY = 60 # Delay between each check for reminders
-_MAGIC_NUMBER = 0x00abcdef
-_ASSIGNED_COLOR = 0x0adbfc
-_UNASSIGNED_COLOR = 0x00ff00
+_MAGIC_NUMBER = 0x12abcdef
+_ASSIGNED_COLOR = 0xff3b3b
+_UNASSIGNED_COLOR = 0x0adbfc
 _COMPLETED_COLOR = 0x00ff00
 _NORMAL = 1
 _COMPLETE = 2
-
+_TIME_ZONE = pytz.timezone('US/Eastern')
 class _Task:
     def __init__(self, task_id, create=False):
         self.id = task_id
@@ -40,18 +42,18 @@ class _Task:
             self.name           = ""
             self.type           = 0
             self.status         = _NORMAL
-            self.date           = 0
+            self.due_date       = 0
             self.remind_date    = 0
             self.assignees      = []
             self.description    = ""
             self.update()
             
         else:
-            with open(f".pmp/{task_id}.task", "r") as f:
+            with open(f".pmp/{hex(task_id)[2:]}.task", "r") as f:
                 self.name           = f.readline().strip()
                 self.type           = int(f.readline().strip(), 16)
                 self.status         = int(f.readline().strip(), 16)
-                self.date           = int(f.readline().strip(), 16)
+                self.due_date       = int(f.readline().strip(), 16)
                 self.remind_date    = int(f.readline().strip(), 16)
                 self.assignees      = f.readline().strip().split("\t")
                 self.description    = f.read()
@@ -60,11 +62,18 @@ class _Task:
         return self.type != 0
 
     def __repr__(self):
-        return f"<Task {self.id} {self.name}>"
+        return f"<Task {hex(self.id)} {self.name}>"
 
     def update(self):
-        with open(f".pmp/{self.id}.task", "w") as f:
-            f.write(f"{self.name}\n{self.type}\n{self.status}\n{self.date}\n{self.remind_date}\n{self.assignees}\n{self.description}")
+        with open(f".pmp/{hex(self.id)[2:]}.task", "w") as f:
+            f.write(f"{self.name}\n{self.type}\n{self.status}\n")
+            f.write(hex(self.due_date)[2:])
+            f.write("\n")
+            f.write(hex(self.remind_date)[2:])
+            f.write("\n")
+            f.write("\t".join(self.assignees))
+            f.write("\n")
+            f.write(self.description)
 
 
 class ProjectManagement(commands.Cog):
@@ -73,7 +82,17 @@ class ProjectManagement(commands.Cog):
         self._read_cache()
         self._read_type_cache()
     
+    def __del__(self):
+        self._write_cache()
 
+    def _write_cache(self):
+        with open(".pmp/cache", "w") as cache_file:
+            cache_file.write("\n".join([hex(t.id) for t in self.cache]))
+
+    @commands.command(aliases=["dummy2"])
+    async def dummy(self, ctx, *, msg):
+        await ctx.send(f"One second...{msg}")
+        
     def _read_cache(self):
         with open(".pmp/cache", "r") as cache_file:
             cache_strs = cache_file.read().splitlines()
@@ -92,20 +111,34 @@ class ProjectManagement(commands.Cog):
         # TODO: check any task need to send reminder
         await asyncio.sleep(_DELAY)
 
-    @commands.command()
+    @commands.command(aliases=['timeline'])
+    async def todo(self, ctx, *, task_name):
+        pass
+
+    @commands.command(aliases=['info'])
     async def describe(self, ctx, *, msg):
         for task in self.cache:
             if task.name == msg:
                 # Create embed
-                dict_embed = nextcord.Embed(
-                    title = task.name,
-                    description = f"Due Date: {task.due_date}\n" +\
-                                f"Description: {task.description}\n",
-                    colour = _ASSIGNED_COLOR
-                )
-                dict_embed.set_thumbnail(url="https://media.discordapp.net/attachments/952037974420385793/952038039457267712/Eve_Code_Ultimate_2.png")
-                dict_embed.set_footer(text="Github: https://github.com/jonah-chen/eve-bot")
-                await ctx.send(embed=dict_embed)
+                # convert due date to local time
+                try:
+                    if task.due_date:
+                        due_date_timestamp = datetime.datetime.fromtimestamp(float(task.due_date), tz=_TIME_ZONE)
+                        due_date_str = due_date_timestamp.strftime('%m/%d/%Y %H:%M')
+                    else:
+                        due_date_str = "N/A"
+
+                    dict_embed = nextcord.Embed(
+                        title = task.name,
+                        description = f"Due Date: {due_date_str}\n" +\
+                                    f"Description: {task.description}\n",
+                        colour = _COMPLETED_COLOR if task.status == _COMPLETE else _ASSIGNED_COLOR
+                    )
+                    dict_embed.set_thumbnail(url="https://media.discordapp.net/attachments/952037974420385793/952038039457267712/Eve_Code_Ultimate_2.png")
+                    dict_embed.set_footer(text="Github: https://github.com/jonah-chen/eve-bot")
+                    await ctx.send(embed=dict_embed)
+                except Exception as e:
+                    print(e)
                 return
         await ctx.send("Task not found.")
 
@@ -116,15 +149,17 @@ class ProjectManagement(commands.Cog):
                 if member is None:
                     await ctx.send("Please specify a member.")
                     return
-                if member.id in task.assignees:
+                if member.name in task.assignees:
                     await ctx.send("Member already assigned.")
                     return
-                task.assignees.append(member.id)
+                task.assignees.append(member.name)
                 task.update()
-                await ctx.send(f"{member.mention} has been assigned to {task.name}.")
-                return     
+                await ctx.send(f"`{member.name}` has been assigned to `{task.name}`.")
+                return
 
-    @commands.command(aliases=['task', 'new_task'])
+        await ctx.send("Task not found.")
+
+    @commands.command(aliases=['task', 'new_task', 'create', 'add'])
     async def add_task(self, ctx, *, msg):
         if any(c.isspace() for c in msg):
             await ctx.send("Task name cannot contain spaces.")
@@ -133,22 +168,42 @@ class ProjectManagement(commands.Cog):
             await ctx.send("Task name cannot start with double underscore.")
             return
 
-        task_id = hex(int(time()))[2:] - _MAGIC_NUMBER
+        task_id = int(time()) - _MAGIC_NUMBER
         # check task does not have the same name
         if any(t.name == msg for t in self.cache):
             await ctx.send("Task name already exists.")
             return
         
         # add task to cache
-        ctx.cache.add(_Task(task_id, True))
+        my_task = _Task(task_id, True)
+        my_task.name = msg
+        my_task.update()
+        self.cache.add(my_task)
+        self._write_cache()
+        await ctx.send(f"Task `{msg}` has been created.")
+
+    @commands.command(aliases=['+', 'description'])
+    async def add_description(self, ctx, *, msg):
+        fpos = msg.find(" ")
+        task = msg[:fpos]
+        description = msg[fpos+1:]
+        for t in self.cache:
+            if t.name == task:
+                t.description = description
+                t.update()
+                await ctx.send(f"Description for `{t.name}` has been updated.")
+                return
+
+        await ctx.send("Task not found.")
 
     @commands.command(aliases=['categlorize', 'add_to_category', 'set_type'])
     async def cat(ctx, *, msg):
         await ctx.send("Not implemented.")
 
-    @commands.command(aliases=['due_date', 'set_due_date'])
+    
+    @commands.command(aliases=['due_date', 'set_due_date', 'deadline', 'set_deadline'])
     async def due(self, ctx, *, msg):
-        now = datetime.datetime.now(pytz.timezone('US/Eastern'))
+        now = datetime.datetime.now(_TIME_ZONE)
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + datetime.timedelta(days=1)
         task = msg.split()[0]
@@ -157,23 +212,43 @@ class ProjectManagement(commands.Cog):
             if t.name == task:
                 task = t
                 break
+        
+        if type(task) is not _Task:
+            await ctx.send("Task not found.")
+            return
 
-        if 'tmrw' in msg.lower() or 'tomorrow' in msg.lower() or 'tom' in msg.lower() or 'tmr' in msg.lower():
+        if 'today' in msg.lower():
+            tgt_date = today
+        elif 'tmrw' in msg.lower() or 'tomorrow' in msg.lower() or 'tom' in msg.lower() or 'tmr' in msg.lower():
             tgt_date = tomorrow
         elif 'mon' in msg.lower(): # next monday
             tgt_date = today + datetime.timedelta(days=7 - today.weekday())
+            if tgt_date < today:
+                tgt_date += datetime.timedelta(days=7)
         elif 'tue' in msg.lower(): # next tuesday
             tgt_date = today + datetime.timedelta(days=1 - today.weekday())
+            if tgt_date < today:
+                tgt_date += datetime.timedelta(days=7)
         elif 'wed' in msg.lower(): # next wednesday
             tgt_date = today + datetime.timedelta(days=2 - today.weekday())
+            if tgt_date < today:
+                tgt_date += datetime.timedelta(days=7)
         elif 'thu' in msg.lower(): # next thursday
             tgt_date = today + datetime.timedelta(days=3 - today.weekday())
+            if tgt_date < today:
+                tgt_date += datetime.timedelta(days=7)
         elif 'fri' in msg.lower(): # next friday
             tgt_date = today + datetime.timedelta(days=4 - today.weekday())
+            if tgt_date < today:
+                tgt_date += datetime.timedelta(days=7)
         elif 'sat' in msg.lower(): # next saturday
             tgt_date = today + datetime.timedelta(days=5 - today.weekday())
+            if tgt_date < today:
+                tgt_date += datetime.timedelta(days=7)
         elif 'sun' in msg.lower(): # next sunday
             tgt_date = today + datetime.timedelta(days=6 - today.weekday())
+            if tgt_date < today:
+                tgt_date += datetime.timedelta(days=7)
         else:
             date_cand = [p for p in parts if p.find('/') != -1]
             if len(date_cand) != 1:
@@ -185,7 +260,7 @@ class ProjectManagement(commands.Cog):
             if month < 1 or month > 12 or day < 1 or day > 31:
                 await ctx.send("Invalid date")
                 return
-            tgt_date = datetime.datetime(now.year, month, day, 0, 0, 0, 0, pytz.timezone('US/Eastern'))
+            tgt_date = datetime.datetime(now.year, month, day, 0, 0, 0, 0, _TIME_ZONE)
             if tgt_date < now:
                 tgt_date.year += 1
 
@@ -201,7 +276,7 @@ class ProjectManagement(commands.Cog):
             return
         tgt_date = tgt_date.replace(hour=hour, minute=minute)
 
-        task.due_date = int(time.mktime(tgt_date.timetuple()))
+        task.due_date = int(mktime(tgt_date.timetuple()))
         task.update()
         await ctx.send(f"Task {task.name} is now due on {tgt_date.strftime('%m/%d/%Y %H:%M')}")
 
@@ -209,15 +284,20 @@ class ProjectManagement(commands.Cog):
     @commands.command(aliases=['set_reminder'])
     async def remind(self, ctx, *, msg):
         task = msg.split()[0]
+        msg = msg[len(task):]
         for t in self.cache:
             if t.name == task:
                 task = t
                 break
+        
+        if type(task) is not _Task:
+            await ctx.send("Task not found.")
+            return
+
         if task.due_date <= 0:
             await ctx.send("Cannot set reminder for task with no due date.")
             return
 
-        msg = msg[len(task):]
         number = ''.join([c for c in msg if c.isdigit()])
         if not number:
             await ctx.send("Invalid reminder time.")
@@ -243,7 +323,10 @@ class ProjectManagement(commands.Cog):
         
         task.remind_date = task.due_date - number
         task.update()
-        await ctx.send(f"Task {task.name} will be reminded in {number}s before due date.")
+
+        date = datetime.datetime.fromtimestamp(task.remind_date, _TIME_ZONE)
+        await ctx.send(f"Task {task.name} will be reminded on {date.strftime('%m/%d/%Y %H:%M')}")
+
 
     @commands.command(aliases=['complete', 'completed', 'finish', 'finish_task', 'finished'])
     async def done(self, ctx, *, msg):
@@ -251,6 +334,7 @@ class ProjectManagement(commands.Cog):
             if t.name == msg:
                 t.status = _COMPLETE
                 t.update()
+                await ctx.send(f"Marked {t.name} as complete.")
                 return
         await ctx.send("Task not found.")
 
