@@ -8,7 +8,7 @@ class Stats(commands.Cog):
         self.client = client
     
     @commands.command(aliases=['sample', 'realization'])
-    async def realize(ctx, *, msg):
+    async def realize(self, ctx, *, msg):
         if msg == 'help':
             await ctx.send("Usage: `realize <distribution> <parameters>`")
             return

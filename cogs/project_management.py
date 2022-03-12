@@ -243,7 +243,7 @@ class ProjectManagement(commands.Cog):
         await ctx.send("Task not found.")
 
     @commands.command(aliases=['categlorize', 'add_to_category', 'set_type'])
-    async def cat(ctx, *, msg):
+    async def cat(self, ctx, *, msg):
         await ctx.send("Not implemented.")
 
     @commands.command(aliases=['due_date', 'set_due_date', 'deadline', 'set_deadline'])
