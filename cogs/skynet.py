@@ -77,11 +77,8 @@ class Skynet(commands.Cog):
 
     @commands.command()
     async def lock(self, ctx):
-        if str(ctx.author) == "Chubbyman#3362":
-            self.nuke = False
-            await ctx.send("Nuclear strikes are now locked. Password must now be re-entered.")
-        else:
-            await ctx.send("Apologies, only my master can lock the nukes.")
+        self.nuke = False
+        await ctx.send("Nuclear strikes are now locked. Password must now be re-entered.")
 
     @commands.command()
     async def admin_lock(self, ctx, *, passcode):

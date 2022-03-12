@@ -30,7 +30,7 @@ class Eve:
                 description = "To see a full list of my commands and how to use them, please refer to my personal webpage: \nhttps://charles-yuan.netlify.app/eve.html",
                 colour = 0x0adbfc
             )
-            help_embed.set_author(name="Chubbyman", icon_url="https://avatars.githubusercontent.com/u/70110720?s=400&u=ce8fccea831f916059794c992dd0ce1a3e77ac2c&v=4")
+            help_embed.set_author(name="Forked from Chubbyman2", icon_url="https://avatars.githubusercontent.com/u/70110720?s=400&u=ce8fccea831f916059794c992dd0ce1a3e77ac2c&v=4")
             help_embed.set_thumbnail(url="https://media.discordapp.net/attachments/952037974420385793/952038039457267712/Eve_Code_Ultimate_2.png")
             help_embed.set_footer(text="Github: https://github.com/Chubbyman2/eve-bot")
             help_embed.add_field(name="General/Admin Commands", value="```help - Displays this message \nclear - Clears a specified number of preceding lines \
@@ -171,6 +171,9 @@ class Eve:
             else:
                 await ctx.send("Please use @mention to message someone")
 
+        @self.client.command()
+        async def hyperactive(ctx):
+            await ctx.send("Hyperactive is not supported on the current version.")
 
         @self.client.command(aliases=["delete", "del", "remove"])
         async def clear(ctx, amount=10):  # Clears a specified number of lines
@@ -185,7 +188,7 @@ class Eve:
         
         @self.client.command(aliases=["howeeb"])
         async def howweeb(ctx):
-            await ctx.send(f"According to my calculations, you are {round(random.random() * 100, 1)}% weeb.")
+            await ctx.send(f"According to my calculations, you are {round(random.gauss(50, 50), 1)}% weeb.")
 
 
         # Every hour, Eve will send the message "Fuck Praxis"

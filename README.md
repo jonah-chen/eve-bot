@@ -8,6 +8,9 @@ Disclaimer: The images are from an old MMORPG named <a href="https://elsword.kog
 
 If you would like more information on her different commands, please refer to my <a href="https://charles-yuan.netlify.app/eve.html">website</a>.
 
+## Changes on the Fork
+The fork enables the chatbot and
+
 ## Getting Started
 To get started, you'll need to <a href="https://discord.com/developers/docs/intro">sign up</a> to become a Discord developer, create a bot (application), then get your token. 
 

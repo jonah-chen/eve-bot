@@ -16,6 +16,8 @@ Files:
     - description (could be multiple lines)
 """
 
+import os
+import shutil
 import nextcord
 from nextcord.ext import commands
 from time import time, mktime
@@ -54,7 +56,7 @@ class _Task:
             self.update()
 
         else:
-            with open(f".pmp/{hex(task_id)[2:]}.task", "r") as f:
+            with open(os.path.join(".pmp", f"{hex(self.id)[2:]}.task"), "r") as f:
                 self.name = f.readline().strip()
                 self.type = int(f.readline().strip(), 16)
                 self.status = int(f.readline().strip(), 16)
@@ -71,7 +73,7 @@ class _Task:
         return f"<Task {hex(self.id)} {self.name}>"
 
     def update(self):
-        with open(f".pmp/{hex(self.id)[2:]}.task", "w") as f:
+        with open(os.path.join(".pmp", f"{hex(self.id)[2:]}.task"), "w") as f:
             f.write(f"{self.name}\n{self.type}\n{self.status}\n")
             f.write(hex(self.due_date)[2:])
             f.write("\n")
@@ -117,17 +119,17 @@ class ProjectManagement(commands.Cog):
         self._write_cache()
 
     def _write_cache(self):
-        with open(".pmp/cache", "w") as cache_file:
+        with open(os.path.join(".pmp", "cache")) as cache_file:
             cache_file.write("\n".join([hex(t.id)[2:] for t in self.cache]))
 
     def _read_cache(self):
-        with open(".pmp/cache", "r") as cache_file:
+        with open(os.path.join(".pmp", "cache"), "r") as cache_file:
             cache_strs = cache_file.read().splitlines()
         self.cache = set([_Task(int(t, 16))
                          for t in cache_strs])  # previous cached messages
 
     def _read_type_cache(self):
-        with open(".pmp/types", "r") as cache_file:
+        with open(os.path.join(".pmp", "types"), "r") as cache_file:
             cache_strs = cache_file.read().splitlines()
 
         self.types = dict()
@@ -149,6 +151,11 @@ class ProjectManagement(commands.Cog):
                     for assignee in task.assignees:
                         channel = await self.client.create_dm(mySnowFlake(assignee))
                         await channel.send(embed=emb)
+
+            # make backup by copying the .pmp directory to .pmp.bak
+            if os.path.exists(".pmp.bak"):
+                os.remove(".pmp.bak")
+            shutil.copytree(".pmp", ".pmp.bak")
 
             await asyncio.sleep(_DELAY)
 
