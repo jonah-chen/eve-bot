@@ -80,21 +80,23 @@ class _Task:
             f.write("\t".join(map(str, self.assignees)))
             f.write("\n")
             f.write(self.description)
+        
+    @property
+    def due_date_hr(self):
+        if self.due_date:
+            due_date_timestamp = datetime.datetime.fromtimestamp(
+                float(self.due_date), tz=_TIME_ZONE)
+            return due_date_timestamp.strftime('%m/%d/%Y %H:%M')
+        else:
+            return "N/A"
 
 
 class ProjectManagement(commands.Cog):
     @staticmethod
-    def embed_task_summary(task):
-        if task.due_date:
-            due_date_timestamp = datetime.datetime.fromtimestamp(
-                float(task.due_date), tz=_TIME_ZONE)
-            due_date_str = due_date_timestamp.strftime('%m/%d/%Y %H:%M')
-        else:
-            due_date_str = "N/A"
-
+    def embed_task_summary(task: _Task):
         dict_embed = nextcord.Embed(
             title=task.name,
-            description=f"Due Date: {due_date_str}\n" +
+            description=f"Due Date: {task.due_date_hr}\n" +
             f"Description: {task.description}\n",
             colour=_COMPLETED_COLOR if task.status == _COMPLETE else _ASSIGNED_COLOR
         )
@@ -161,7 +163,7 @@ class ProjectManagement(commands.Cog):
         embed = nextcord.Embed(title="Todo List", color=0x555555)
         for task in tasks:
             embed.add_field(name=f"{task.name}",
-                            value=f"{task.due_date}", inline=False)
+                            value=f"{task.due_date_hr}", inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['info'])
