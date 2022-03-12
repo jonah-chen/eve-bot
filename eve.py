@@ -12,7 +12,6 @@ load_dotenv()
 class Eve:
     def __init__(self):
         self.client = commands.Bot(command_prefix=["eve ", "Eve "], case_insensitive=True, help_command=None)
-        self.praxis_lock = True
         self.praxis = False
         self.praxis_time = None
 
@@ -140,6 +139,8 @@ class Eve:
         # Private message
         @self.client.command()
         async def pm(ctx, member: nextcord.Member = None, *, message):
+            print(f"{ctx.author.name} has PMed {member.name}")
+            print(f"member is {member}")
             if member is not None:
                 channel = member.dm_channel
                 if channel is None:  # If user has never talked to Eve
@@ -169,18 +170,7 @@ class Eve:
         # Gives flowers
         @self.client.command(aliases=["give_flower", "give_rose", "give_roses", "send_flower", "send_flowers", "send_roses", "send_rose"])
         async def give_flowers(ctx, member):
-            if str(ctx.author) == "Chubbyman#3362":
-                await ctx.send(f"{member}, here is a :rose:, courtesy of your beloved Claire Clayton.")
-            else:
-                await ctx.send(f"{member}, here is a :rose:, courtesy of your beloved {ctx.author}.")
-
-
-        # Unleashes Hyperactive skill
-        @self.client.command(aliases=["odin_spear", "hyperactive_skill"])
-        async def hyperactive(ctx):
-            await ctx.send("https://media.giphy.com/media/fFmgzgndHLvfovfK9B/giphy.gif")
-            time.sleep(3)
-            await ctx.send("https://media.giphy.com/media/bk0pqOHhjfVGphL6Y1/giphy.gif")
+            await ctx.send(f"{member}, here is a :rose:, courtesy of your beloved {ctx.author}.")
 
         
         @self.client.command(aliases=["howeeb"])
@@ -192,6 +182,7 @@ class Eve:
         @self.client.command()
         async def fuck_praxis(ctx):
             EST = pytz.timezone("US/Eastern")
+
 
             if not self.praxis:
                 self.praxis = True
@@ -206,6 +197,16 @@ class Eve:
                 await ctx.send("Fuck Praxis.")
                 # Asyncio is useful because it allows other tasks to be run while .sleep() is active
                 await asyncio.sleep(3600)
+
+        
+        for filename in os.listdir("cogs"):
+            if filename.endswith(".py"):
+                # Cuts cog_example.py to cog_example
+                self.client.load_extension(f"cogs.{filename[:-3]}")
+        
+        # Yes, order matters; you have to run this last
+        TOKEN = os.environ["TOKEN"]
+        self.client.run(TOKEN)
 
 
 if __name__ == "__main__":
