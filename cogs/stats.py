@@ -94,14 +94,24 @@ class Stats(commands.Cog):
                     p = list(params.values())[0]
                     await ctx.send(str(np.random.geometric(p)))
             elif 'hypergeometric' in dist.lower():
-                if 'n' in params and 'm' in params and 'pop' in params:
+                if 'good' in params and 'bad' in params and 'total' in params:
+                    good = int(params['good'])
+                    bad = int(params['bad'])
+                    total = int(params['total'])
+                    await ctx.send(str(np.random.hypergeometric(good, bad, total)))
+                if 'g' in params and 'b' in params and 'n' in params:
+                    g = int(params['g'])
+                    b = int(params['b'])
                     n = int(params['n'])
-                    m = int(params['m'])
-                    N = int(params['pop'])
-                    await ctx.send(str(np.random.hypergeometric(n, m, N)))
+                    await ctx.send(str(np.random.hypergeometric(g, b, n)))
+                if 'n' in params and 'k' in params and 'samples' in params:
+                    n = int(params['n'])
+                    k = int(params['k'])
+                    samples = int(params['samples'])
+                    await ctx.send(str(np.random.hypergeometric(k, n-k, samples)))
                 else:
                     await ctx.send("Invalid parameters for hypergeometric distribution: " + 
-                        "Only `n,m,N` are valid parameters.")
+                        "Only `good,bad,total`, `g,b,n`, and `n,k,samples` are valid parameters.")
             elif 'exponential' in dist.lower():
                 if 'lambda' in params:
                     lam = params['lambda']
