@@ -10,12 +10,14 @@ class Stats(commands.Cog):
     @commands.command(aliases=['sample', 'realization'])
     async def realize(self, ctx, *, msg):
         if msg == 'help':
-            await ctx.send("Usage: `realize <distribution> <parameters>`")
+            await ctx.send("Usage: `realize <distribution> <parameters (comma seperated)>`")
             return
 
         try:
             # Split the message into the distribution and the parameters
-            dist, params_str = msg.lower().split(' ')
+            dist, params_str = msg.lower().split(' ', 1)
+            # purge whitespace from param_str
+            params_str = params_str.replace(' ', '')
             params = dict()
             for param in params_str.split(','):
                 splitted = param.split('=')
@@ -70,15 +72,15 @@ class Stats(commands.Cog):
                     rt = params['rt']
                     await ctx.send(str(np.random.poisson(rt)))
                 elif 'r' in params and 't' in params:
-                    rt = int(params['r']) * int(params['t'])
-                    await ctx.send(str(np.random.poisson(r * t)))
+                    rt = params['r'] * params['t']
+                    await ctx.send(str(np.random.poisson(rt)))
                 else:
                     await ctx.send("Invalid parameters for poisson distribution: " + 
                         "Only `lambda` and `rt` are valid parameters.")
             elif 'binomial' in dist.lower():
                 if 'n' in params and 'p' in params:
                     n = int(params['n'])
-                    p = int(params['p'])
+                    p = params['p']
                     await ctx.send(str(np.random.binomial(n, p)))
                 else:
                     await ctx.send("Invalid parameters for binomial distribution: " + 

@@ -119,7 +119,7 @@ class ProjectManagement(commands.Cog):
         self._write_cache()
 
     def _write_cache(self):
-        with open(os.path.join(".pmp", "cache")) as cache_file:
+        with open(os.path.join(".pmp", "cache"), "w") as cache_file:
             cache_file.write("\n".join([hex(t.id)[2:] for t in self.cache]))
 
     def _read_cache(self):
