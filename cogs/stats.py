@@ -91,7 +91,7 @@ class Stats(commands.Cog):
                     p = params['p']
                     await ctx.send(str(np.random.geometric(p)))
                 else: # when distribution have only one parameter
-                    p = params.values()[0]
+                    p = list(params.values())[0]
                     await ctx.send(str(np.random.geometric(p)))
             elif 'hypergeometric' in dist.lower():
                 if 'n' in params and 'm' in params and 'N' in params:
@@ -107,7 +107,7 @@ class Stats(commands.Cog):
                     lam = params['lambda']
                     await ctx.send(str(np.random.exponential(lam)))
                 else:
-                    lam = params.values()[0]
+                    lam = list(params.values())[0]
                     await ctx.send(str(np.random.exponential(lam)))
             elif 'lognormal' in dist.lower():
                 if 'mu' in params and 'sigma' in params:
@@ -130,7 +130,7 @@ class Stats(commands.Cog):
                     df = params['df']
                     await ctx.send(str(np.random.chisquare(df)))
                 else:
-                    df = params.values()[0]
+                    df = list(params.values())[0]
                     await ctx.send(str(np.random.chisquare(df)))
             elif 'f'==dist.lower():
                 if 'dfn' in params and 'dfd' in params:
@@ -185,7 +185,7 @@ class Stats(commands.Cog):
                     nu = params['nu']
                     await ctx.send(str(np.random.standard_t('nu')))
                 else:
-                    nu = params.values()[0]
+                    nu = list(params.values())[0]
                     await ctx.send(str(np.random.standard_t(nu)))
             elif 'negative_binomial' in dist.lower():
                 if 'n' in params and 'p' in params:
