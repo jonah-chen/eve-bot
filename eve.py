@@ -12,8 +12,7 @@ load_dotenv()
 class Eve:
     def __init__(self):
         self.client = commands.Bot(command_prefix=["eve ", "Eve "], case_insensitive=True, help_command=None)
-        self.praxis = False
-        self.praxis_time = None
+        self.praxis = dict()
 
 
     def main(self):
@@ -195,13 +194,18 @@ class Eve:
         @self.client.command()
         async def fuck_praxis(ctx):
             EST = pytz.timezone("US/Eastern")
+            id = ctx.author.guild.id
+            if id in self.praxis:
+                self.praxis[id] = not self.praxis[id]
+            else:
+                self.praxis[id] = True
 
-            self.praxis = not self.praxis
-            self.praxis_time = datetime.datetime.now(EST).strftime("%H:%M:%S")
-            await ctx.send(f"Praxis bullying has {'commenced' if self.praxis else 'been stopped'} at {self.praxis_time} EST.")
+            praxis_time = datetime.datetime.now(EST).strftime("%H:%M:%S")
+            await ctx.send(f"Praxis bullying has {'commenced' if self.praxis[id] else 'been stopped'} at {praxis_time} EST.")
 
-            while self.praxis:
-                await ctx.send("Fuck Praxis.")
+            while self.praxis[id]:
+                await ctx.send(":regional_indicator_f: :regional_indicator_u: :regional_indicator_c: :regional_indicator_k: " +\
+                    ":regional_indicator_p: :regional_indicator_r: :regional_indicator_a: :regional_indicator_x: :regional_indicator_i: :regional_indicator_s:")
                 # Asyncio is useful because it allows other tasks to be run while .sleep() is active
                 await asyncio.sleep(3600)
 
