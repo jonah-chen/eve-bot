@@ -1,5 +1,7 @@
 import asyncio
 import datetime
+from urllib.request import urlopen
+import ssl
 import nextcord
 from nextcord.ext import commands
 import os
@@ -13,6 +15,7 @@ class Eve:
     def __init__(self):
         self.client = commands.Bot(command_prefix=["eve ", "Eve "], case_insensitive=True, help_command=None)
         self.praxis = dict()
+        self.bme = dict()
 
 
     def main(self):
@@ -206,6 +209,35 @@ class Eve:
             while self.praxis[id]:
                 await ctx.send(":regional_indicator_f: :regional_indicator_u: :regional_indicator_c: :regional_indicator_k: " +\
                     ":regional_indicator_p: :regional_indicator_r: :regional_indicator_a: :regional_indicator_x: :regional_indicator_i: :regional_indicator_s:")
+                # Asyncio is useful because it allows other tasks to be run while .sleep() is active
+                await asyncio.sleep(3600)
+        
+        @self.client.command()
+        async def fuck_bme(ctx):
+            BME = "<div class=\"RatingValue__Numerator-qw8sqy-2 liyUjw\">"
+            ssl._create_default_https_context = ssl._create_unverified_context
+
+            EST = pytz.timezone("US/Eastern")
+            id = ctx.author.guild.id
+            if id in self.bme:
+                self.bme[id] = not self.bme[id]
+            else:
+                self.bme[id] = True
+
+            bme_time = datetime.datetime.now(EST).strftime("%H:%M:%S")
+            await ctx.send(f"BME bullying has {'commenced' if self.bme[id] else 'been stopped'} at {bme_time} EST.")
+
+            while self.bme[id]:
+                bme_time = datetime.datetime.now(EST).strftime("%H:%M:%S")
+                page = urlopen("https://www.ratemyprofessors.com/ShowRatings.jsp?tid=2479393")
+                page = page.read()
+                page = page.decode("utf-8")
+                rating_start = page.find(BME) + len(BME)
+                rating_end = page.find("</div>", rating_start)
+                rating = page[rating_start:rating_end]
+                await ctx.send(":regional_indicator_f: :regional_indicator_u: :regional_indicator_c: :regional_indicator_k: " +\
+                    ":regional_indicator_b: :regional_indicator_m: :two: :zero: :five:\n" +\
+                        f"The Prof Rating is currently {rating}/5 (last updated on {bme_time} EST).")
                 # Asyncio is useful because it allows other tasks to be run while .sleep() is active
                 await asyncio.sleep(3600)
 
