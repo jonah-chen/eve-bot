@@ -236,7 +236,7 @@ class Eve:
                 rating_end = page.find("</div>", rating_start)
                 rating = page[rating_start:rating_end]
                 await ctx.send(":regional_indicator_f: :regional_indicator_u: :regional_indicator_c: :regional_indicator_k: " +\
-                    ":regional_indicator_b: :regional_indicator_m: :two: :zero: :five:\n" +\
+                    ":regional_indicator_b: :regional_indicator_m: :regional_indicator_e: :two: :zero: :five:\n" +\
                         f"The Prof Rating is currently {rating}/5 (last updated on {bme_time} EST).")
                 # Asyncio is useful because it allows other tasks to be run while .sleep() is active
                 await asyncio.sleep(3600)
