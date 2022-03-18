@@ -8,6 +8,9 @@ Disclaimer: The images are from an old MMORPG named <a href="https://elsword.kog
 
 If you would like more information on her different commands, please refer to my <a href="https://charles-yuan.netlify.app/eve.html">website</a>.
 
+## Changes on the Fork
+The fork enables the chatbot and
+
 ## Getting Started
 To get started, you'll need to <a href="https://discord.com/developers/docs/intro">sign up</a> to become a Discord developer, create a bot (application), then get your token. 
 
@@ -67,6 +70,9 @@ Eve now has embeds! They're integrated into the help, define, and wiki commands.
 <img src="https://github.com/Chubbyman2/eve-bot/blob/main/docs/eve_embed_sample_2.PNG" width="412">
 <img src="https://github.com/Chubbyman2/eve-bot/blob/main/docs/eve_embed_sample.png" width="412">
 </p>
+
+### Update (Mar 14, 2022):
+Eve received her first PR! Thanks to <a href="https://github.com/jonah-chen">Jonah Chen</a> for fixing the weird Latex formatting issue with the wiki command. 
 
 ## License
 This project is licensed under the MIT License - see the <a href="https://github.com/Chubbyman2/eve-bot/blob/main/LICENSE">LICENSE</a> file for details.

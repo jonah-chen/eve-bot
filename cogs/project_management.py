@@ -16,6 +16,8 @@ Files:
     - description (could be multiple lines)
 """
 
+import os
+import shutil
 import nextcord
 from nextcord.ext import commands
 from time import time, mktime
@@ -54,7 +56,7 @@ class _Task:
             self.update()
 
         else:
-            with open(f".pmp/{hex(task_id)[2:]}.task", "r") as f:
+            with open(os.path.join(".pmp", f"{hex(self.id)[2:]}.task"), "r") as f:
                 self.name = f.readline().strip()
                 self.type = int(f.readline().strip(), 16)
                 self.status = int(f.readline().strip(), 16)
@@ -71,7 +73,7 @@ class _Task:
         return f"<Task {hex(self.id)} {self.name}>"
 
     def update(self):
-        with open(f".pmp/{hex(self.id)[2:]}.task", "w") as f:
+        with open(os.path.join(".pmp", f"{hex(self.id)[2:]}.task"), "w") as f:
             f.write(f"{self.name}\n{self.type}\n{self.status}\n")
             f.write(hex(self.due_date)[2:])
             f.write("\n")
@@ -80,21 +82,26 @@ class _Task:
             f.write("\t".join(map(str, self.assignees)))
             f.write("\n")
             f.write(self.description)
+        
+    @property
+    def due_date_hr(self):
+        if self.due_date:
+            due_date_timestamp = datetime.datetime.fromtimestamp(
+                float(self.due_date), tz=_TIME_ZONE)
+            return due_date_timestamp.strftime('%m/%d/%Y %H:%M')
+        else:
+            return "N/A"
 
 
 class ProjectManagement(commands.Cog):
+    """
+    Praxis is making us do this.
+    """
     @staticmethod
-    def embed_task_summary(task):
-        if task.due_date:
-            due_date_timestamp = datetime.datetime.fromtimestamp(
-                float(task.due_date), tz=_TIME_ZONE)
-            due_date_str = due_date_timestamp.strftime('%m/%d/%Y %H:%M')
-        else:
-            due_date_str = "N/A"
-
+    def embed_task_summary(task: _Task):
         dict_embed = nextcord.Embed(
             title=task.name,
-            description=f"Due Date: {due_date_str}\n" +
+            description=f"Due Date: {task.due_date_hr}\n" +
             f"Description: {task.description}\n",
             colour=_COMPLETED_COLOR if task.status == _COMPLETE else _ASSIGNED_COLOR
         )
@@ -115,17 +122,17 @@ class ProjectManagement(commands.Cog):
         self._write_cache()
 
     def _write_cache(self):
-        with open(".pmp/cache", "w") as cache_file:
+        with open(os.path.join(".pmp", "cache"), "w") as cache_file:
             cache_file.write("\n".join([hex(t.id)[2:] for t in self.cache]))
 
     def _read_cache(self):
-        with open(".pmp/cache", "r") as cache_file:
+        with open(os.path.join(".pmp", "cache"), "r") as cache_file:
             cache_strs = cache_file.read().splitlines()
         self.cache = set([_Task(int(t, 16))
                          for t in cache_strs])  # previous cached messages
 
     def _read_type_cache(self):
-        with open(".pmp/types", "r") as cache_file:
+        with open(os.path.join(".pmp", "types"), "r") as cache_file:
             cache_strs = cache_file.read().splitlines()
 
         self.types = dict()
@@ -135,6 +142,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=["live_update", "realtime", "realtime_updates", "live_updates", "realtime_update"])
     async def toggle_live(self, ctx):
+        """
+        Toggle live reminders and task updates for the bot.
+        """
         self.reminders = not self.reminders
         await ctx.send(f"Live updates are now {'enabled' if self.reminders else 'disabled'}.")
 
@@ -148,10 +158,18 @@ class ProjectManagement(commands.Cog):
                         channel = await self.client.create_dm(mySnowFlake(assignee))
                         await channel.send(embed=emb)
 
+            # make backup by copying the .pmp directory to .pmp.bak
+            if os.path.exists(".pmp.bak"):
+                os.remove(".pmp.bak")
+            shutil.copytree(".pmp", ".pmp.bak")
+
             await asyncio.sleep(_DELAY)
 
     @commands.command(aliases=['timeline'])
     async def todo(self, ctx):
+        """
+        View all tasks in your todo list.
+        """
         tasks = [t for t in self.cache if t.status != _COMPLETE]
         tasks.sort(key=lambda t: t.due_date)
         if not tasks:
@@ -161,11 +179,14 @@ class ProjectManagement(commands.Cog):
         embed = nextcord.Embed(title="Todo List", color=0x555555)
         for task in tasks:
             embed.add_field(name=f"{task.name}",
-                            value=f"{task.due_date}", inline=False)
+                            value=f"{task.due_date_hr}", inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['info'])
     async def describe(self, ctx, *, msg):
+        """
+        Describe a task.
+        """
         for task in self.cache:
             if task.name == msg:
                 emb = ProjectManagement.embed_task_summary(task)
@@ -175,6 +196,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command()
     async def assign(self, ctx, member: nextcord.Member = None, *, msg):
+        """
+        Assign a task to a member.
+        """
         for task in self.cache:
             if task.name == msg:
                 if member is None:
@@ -187,10 +211,20 @@ class ProjectManagement(commands.Cog):
                 task.update()
                 await ctx.send(f"`{member.name}` has been assigned to `{task.name}`.")
                 return
+            if member.id in task.assignees:
+                await ctx.send("Member already assigned.")
+                return
+            task.assignees.append(member.id)
+            task.update()
+            await ctx.send(f"`{member.name}` has been assigned to `{task.name}`.")
+            return
         await ctx.send("Task not found.")
 
     @commands.command(aliases=['task', 'new_task', 'create', 'add'])
     async def add_task(self, ctx, *, msg):
+        """
+        Add a new task to the system.
+        """
         if any(c.isspace() for c in msg):
             await ctx.send("Task name cannot contain spaces.")
             return
@@ -214,6 +248,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['+', 'description', 'add_description'])
     async def add_desc(self, ctx, *, msg):
+        """
+        Add a description to a task.
+        """
         fpos = msg.find(" ")
         task = msg[:fpos]
         description = msg[fpos+1:]
@@ -227,11 +264,17 @@ class ProjectManagement(commands.Cog):
         await ctx.send("Task not found.")
 
     @commands.command(aliases=['categlorize', 'add_to_category', 'set_type'])
-    async def cat(ctx, *, msg):
+    async def cat(self, ctx, *, msg):
+        """
+        Categorize a task.
+        """
         await ctx.send("Not implemented.")
 
     @commands.command(aliases=['due_date', 'set_due_date', 'deadline', 'set_deadline'])
     async def due(self, ctx, *, msg):
+        """
+        Set a due date for a task.
+        """
         now = datetime.datetime.now(_TIME_ZONE)
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + datetime.timedelta(days=1)
@@ -312,6 +355,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['set_reminder'])
     async def remind(self, ctx, *, msg):
+        """
+        Set how long before a task is due to remind the assignees.
+        """
         task = msg.split()[0]
         msg = msg[len(task):]
         for t in self.cache:
@@ -358,6 +404,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['complete', 'completed', 'finish', 'finish_task', 'finished'])
     async def done(self, ctx, *, msg):
+        """
+        Mark a task as completed.
+        """
         for t in self.cache:
             if t.name == msg:
                 t.status = _COMPLETE
