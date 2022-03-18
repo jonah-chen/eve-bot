@@ -94,6 +94,9 @@ class _Task:
 
 
 class ProjectManagement(commands.Cog):
+    """
+    Praxis is making us do this.
+    """
     @staticmethod
     def embed_task_summary(task: _Task):
         dict_embed = nextcord.Embed(
@@ -139,6 +142,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=["live_update", "realtime", "realtime_updates", "live_updates", "realtime_update"])
     async def toggle_live(self, ctx):
+        """
+        Toggle live reminders and task updates for the bot.
+        """
         self.reminders = not self.reminders
         await ctx.send(f"Live updates are now {'enabled' if self.reminders else 'disabled'}.")
 
@@ -161,6 +167,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['timeline'])
     async def todo(self, ctx):
+        """
+        View all tasks in your todo list.
+        """
         tasks = [t for t in self.cache if t.status != _COMPLETE]
         tasks.sort(key=lambda t: t.due_date)
         if not tasks:
@@ -175,6 +184,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['info'])
     async def describe(self, ctx, *, msg):
+        """
+        Describe a task.
+        """
         for task in self.cache:
             if task.name == msg:
                 emb = ProjectManagement.embed_task_summary(task)
@@ -184,6 +196,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command()
     async def assign(self, ctx, member: nextcord.Member = None, *, msg):
+        """
+        Assign a task to a member.
+        """
         for task in self.cache:
             if task.name == msg:
                 if member is None:
@@ -207,6 +222,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['task', 'new_task', 'create', 'add'])
     async def add_task(self, ctx, *, msg):
+        """
+        Add a new task to the system.
+        """
         if any(c.isspace() for c in msg):
             await ctx.send("Task name cannot contain spaces.")
             return
@@ -230,6 +248,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['+', 'description', 'add_description'])
     async def add_desc(self, ctx, *, msg):
+        """
+        Add a description to a task.
+        """
         fpos = msg.find(" ")
         task = msg[:fpos]
         description = msg[fpos+1:]
@@ -244,10 +265,16 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['categlorize', 'add_to_category', 'set_type'])
     async def cat(self, ctx, *, msg):
+        """
+        Categorize a task.
+        """
         await ctx.send("Not implemented.")
 
     @commands.command(aliases=['due_date', 'set_due_date', 'deadline', 'set_deadline'])
     async def due(self, ctx, *, msg):
+        """
+        Set a due date for a task.
+        """
         now = datetime.datetime.now(_TIME_ZONE)
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + datetime.timedelta(days=1)
@@ -328,6 +355,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['set_reminder'])
     async def remind(self, ctx, *, msg):
+        """
+        Set how long before a task is due to remind the assignees.
+        """
         task = msg.split()[0]
         msg = msg[len(task):]
         for t in self.cache:
@@ -374,6 +404,9 @@ class ProjectManagement(commands.Cog):
 
     @commands.command(aliases=['complete', 'completed', 'finish', 'finish_task', 'finished'])
     async def done(self, ctx, *, msg):
+        """
+        Mark a task as completed.
+        """
         for t in self.cache:
             if t.name == msg:
                 t.status = _COMPLETE
