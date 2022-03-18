@@ -3,13 +3,20 @@ from nextcord.ext import commands
 
 
 class Nuke(commands.Cog):
+    """
+    I'm sure this won't backfire
+    """
 
     def __init__(self, client): 
         self.client = client
         self.nuke = False
 
-    @commands.command()
+    @commands.command(usage="<passcode>", aliases=[])
+    @commands.is_owner()
     async def nuke(self, ctx, *, passcode):
+        """
+        Nuke the server.
+        """
         passcode = passcode.lower()
         if "genocidal" in passcode and "organ" in passcode:
             self.nuke = True

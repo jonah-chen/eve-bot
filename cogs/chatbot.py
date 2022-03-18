@@ -8,7 +8,6 @@ class Chatbot(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-
         self.model_name = "microsoft/DialoGPT-medium"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
@@ -16,14 +15,20 @@ class Chatbot(commands.Cog):
         self.chat_history_ids = torch.zeros([1, 1]) # Empty Torch tensor for now
         self.strikes = 0 # Three strikes and the chatbot automatically stops
 
-    @commands.command(aliases=["start_convo", "convo_start", "start_conversation", "conversation_start", "start_conversing"])
+    @commands.command(usage="", aliases=["start_convo", "convo_start", "start_conversation", "conversation_start", "start_conversing"])
     async def chatbot_on(self, ctx):
+        """
+        Start chatbot conversation.
+        """
         self.conversing = True
         await ctx.send("Commencing conversation mode.")
         await ctx.send("When finished, please remember to end conversation with 'eve chatbot_off'.")
 
-    @commands.command(aliases=["end_convo", "convo_end", "end_conversation", "conversation_end", "stop_conversing"])
+    @commands.command(usage="", aliases=["end_convo", "convo_end", "end_conversation", "conversation_end", "stop_conversing"])
     async def chatbot_off(self, ctx):
+        """
+        End chatbot conversation.
+        """
         self.conversing = False
         await ctx.send("Ending conversation mode.")
         await ctx.send("Thank you for talking to me.")
@@ -31,7 +36,9 @@ class Chatbot(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error): 
-        '''This is just to block out a dumb error that occurs with the bot's set prefix.'''
+        """
+        This is just to block out a dumb error that occurs with the bot's set prefix.
+        """
         if isinstance(error, commands.CommandNotFound): 
             if not self.conversing:
                 await ctx.send("Apologies, I don't recognize that command.")
@@ -78,10 +85,12 @@ class Chatbot(commands.Cog):
                 self.chat_history_ids = torch.zeros([1, 1])
                 await message.channel.send("If you would like to chat again, reinitiate chatbot mode with 'eve chatbot_on'.")
     
-    @commands.command(aliases=["question"])
+    @commands.command(usage="", aliases=["question"])
     async def q(self, ctx, *, question):
-        '''Much more stable chatbot function. 
-        Single question-and-answer format, no input of chat history.'''
+        """
+        Much more stable chatbot function. 
+        Single question-and-answer format, no input of chat history.
+        """
         input_ids = self.tokenizer.encode(question + self.tokenizer.eos_token, return_tensors="pt")
 
         # Generate a response
@@ -96,7 +105,6 @@ class Chatbot(commands.Cog):
 
         output = self.tokenizer.decode(chat_history_ids[:, input_ids.shape[-1]:][0], skip_special_tokens=True)
         await ctx.send(output)
-
 
 def setup(client):
     client.add_cog(Chatbot(client))

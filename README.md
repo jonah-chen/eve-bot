@@ -71,5 +71,8 @@ Eve now has embeds! They're integrated into the help, define, and wiki commands.
 <img src="https://github.com/Chubbyman2/eve-bot/blob/main/docs/eve_embed_sample.png" width="412">
 </p>
 
+### Update (Mar 14, 2022):
+Eve received her first PR! Thanks to <a href="https://github.com/jonah-chen">Jonah Chen</a> for fixing the weird Latex formatting issue with the wiki command. 
+
 ## License
 This project is licensed under the MIT License - see the <a href="https://github.com/Chubbyman2/eve-bot/blob/main/LICENSE">LICENSE</a> file for details.
