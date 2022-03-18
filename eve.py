@@ -253,9 +253,6 @@ class Eve:
             else:
                 await ctx.send("Please use @mention to message someone")
 
-        @self.client.command()
-        async def hyperactive(ctx):
-            await ctx.send("Hyperactive is not supported on the current version.")
 
         @self.client.command(usage="[number of messages]", aliases=["delete", "del", "remove"])
         @checks.is_admin()
